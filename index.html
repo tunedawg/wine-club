@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Sip & Scribble 🍷</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blush:#f5d6d6;--blush-deep:#e8b4b8;--blush-pale:#fdf0f0;
+  --cream:#fdf8f3;--cream-warm:#f9f0e7;--petal:#f2c4c4;
+  --rose:#c97b84;--rose-deep:#a85965;--wine:#7b2d3e;--wine-light:#b05068;
+  --mauve:#d4a0a8;--text:#3d2027;--text-soft:#7a4f58;--text-muted:#b08890;
+  --border:#edd5d5;--border-soft:#f5e4e4;--gold:#c9a96e;--gold-pale:#f0e4cc;
+  --shadow:rgba(122,45,62,.08);--shadow-med:rgba(122,45,62,.15);
+  --bar-h:70px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);font-size:14px;overscroll-behavior:none;}
+
+/* APP SHELL */
+.app-shell{display:flex;flex-direction:column;height:100%;height:100dvh;}
+
+/* HEADER */
+.app-header{
+  background:linear-gradient(160deg,#fce8e8 0%,#f9f0f0 50%,var(--cream-warm) 100%);
+  border-bottom:1px solid var(--border);
+  padding:calc(env(safe-area-inset-top) + 16px) 20px 0;
+  text-align:center;position:relative;overflow:hidden;flex-shrink:0;z-index:10;
+}
+.app-header::before{content:'';position:absolute;top:-40px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(232,180,184,.35) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+.app-header::after{content:'';position:absolute;bottom:-20px;left:-20px;width:120px;height:120px;background:radial-gradient(circle,rgba(201,123,132,.2) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+.header-eyebrow{font-size:10px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:var(--rose);margin-bottom:4px;}
+.header-title{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;color:var(--wine);line-height:1;letter-spacing:-.5px;margin-bottom:3px;}
+.header-title em{font-style:italic;color:var(--rose-deep);}
+.header-sub{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--text-soft);margin-bottom:14px;}
+
+/* SWIPE VIEWPORT */
+.swipe-viewport{flex:1;overflow:hidden;position:relative;}
+.swipe-track{display:flex;height:100%;width:300%;transition:transform .38s cubic-bezier(.4,0,.2,1);will-change:transform;}
+.swipe-track.no-transition{transition:none;}
+.view{width:33.3333%;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;flex-shrink:0;}
+.view-inner{max-width:680px;margin:0 auto;padding:20px 16px 24px;min-height:100%;}
+
+/* BOTTOM TAB BAR */
+.bottom-bar{
+  background:rgba(253,248,243,.97);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom);
+  display:flex;align-items:stretch;flex-shrink:0;z-index:10;
+}
+.tab-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 4px 10px;gap:3px;background:none;border:none;
+  cursor:pointer;touch-action:manipulation;position:relative;min-height:var(--bar-h);
+}
+.tab-icon-wrap{
+  position:relative;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1);
+}
+.tab-btn.active .tab-icon-wrap{transform:scale(1.18) translateY(-3px);}
+.tab-btn:active .tab-icon-wrap{transform:scale(.88);}
+.tab-label{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);transition:color .2s;line-height:1;}
+.tab-btn.active .tab-label{color:var(--rose-deep);}
+.tab-pip{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%) scaleX(0);width:22px;height:3px;background:linear-gradient(90deg,var(--petal),var(--rose-deep));border-radius:2px 2px 0 0;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
+.tab-btn.active .tab-pip{transform:translateX(-50%) scaleX(1);}
+
+/* CONTROLS */
+.controls{display:flex;gap:10px;margin-bottom:16px;align-items:center;}
+.search-wrap{flex:1;position:relative;}
+.search-wrap input{width:100%;background:white;border:1.5px solid var(--border);border-radius:24px;padding:10px 16px 10px 38px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.search-wrap input:focus{border-color:var(--mauve);}
+.search-wrap input::placeholder{color:var(--text-muted);}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;opacity:.5;}
+.sort-dropdown{position:relative;}
+.sort-btn{background:white;border:1.5px solid var(--border);border-radius:24px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;touch-action:manipulation;}
+.sort-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:white;border:1px solid var(--border);border-radius:14px;padding:8px;box-shadow:0 8px 24px var(--shadow-med);min-width:170px;z-index:50;}
+.sort-menu.open{display:block;}
+.sort-item{padding:10px 14px;border-radius:8px;font-size:13px;color:var(--text-soft);cursor:pointer;}
+.sort-item:active{background:var(--blush-pale);}
+.sort-item.active{color:var(--rose-deep);font-weight:500;background:var(--blush-pale);}
+
+/* FILTER PILLS */
+.filter-pills{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px;scrollbar-width:none;}
+.filter-pills::-webkit-scrollbar{display:none;}
+.filter-pill{flex-shrink:0;background:white;border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-soft);cursor:pointer;white-space:nowrap;touch-action:manipulation;}
+.filter-pill.active{background:var(--blush-deep);border-color:var(--rose);color:var(--wine);}
+
+/* ENTRY CARDS */
+.entry-card{background:white;border:1px solid var(--border-soft);border-radius:20px;margin-bottom:14px;overflow:hidden;box-shadow:0 2px 12px var(--shadow);cursor:pointer;animation:cardIn .4s ease both;touch-action:manipulation;}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.entry-card:active{transform:scale(.985);opacity:.92;}
+.card-photo{width:100%;height:170px;object-fit:cover;display:block;}
+.card-body{padding:16px 18px 14px;}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.card-title-group{flex:1;min-width:0;}
+.card-wine-name{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:var(--wine);line-height:1.2;margin-bottom:2px;}
+.card-winery{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--text-soft);}
+.card-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;}
+.card-stars{color:var(--gold);font-size:14px;letter-spacing:1px;}
+.card-price{font-size:12px;font-weight:500;color:var(--rose-deep);background:var(--gold-pale);padding:3px 10px;border-radius:12px;}
+.fav-btn{background:none;border:none;font-size:18px;cursor:pointer;touch-action:manipulation;}
+.fav-btn:active{transform:scale(1.4);}
+.card-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.pill{font-size:11px;font-weight:500;font-family:'DM Sans',sans-serif;padding:3px 9px;border-radius:12px;letter-spacing:.3px;}
+.pill-type{background:var(--blush);color:var(--wine);}
+.pill-grape{background:var(--gold-pale);color:#7a5520;}
+.pill-region{background:#e8f0e8;color:#3a5a3a;}
+.pill-wishlist{background:var(--blush-deep);color:var(--rose-deep);}
+.card-notes{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:var(--text-soft);line-height:1.6;margin-bottom:10px;}
+.card-taste{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.taste-dot{font-size:11px;color:var(--text-soft);display:flex;align-items:center;gap:3px;}
+.taste-dot::before{content:'✦';font-size:8px;color:var(--rose);}
+.card-meta{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border-soft);font-size:12px;color:var(--text-muted);}
+.card-with{display:flex;align-items:center;gap:5px;}
+.avatar{width:22px;height:22px;border-radius:50%;background:var(--blush-deep);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--wine);border:1.5px solid white;margin-left:-6px;}
+.avatar:first-child{margin-left:0;}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;font-family:'Cormorant Garamond',serif;}
+.empty-art{font-size:60px;margin-bottom:14px;opacity:.5;}
+.empty-title{font-size:24px;font-weight:600;font-style:italic;color:var(--rose-deep);margin-bottom:6px;}
+.empty-sub{font-size:15px;color:var(--text-muted);}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;}
+.stat-card{background:white;border:1px solid var(--border-soft);border-radius:16px;padding:16px;text-align:center;box-shadow:0 2px 8px var(--shadow);animation:cardIn .4s ease both;}
+.stat-card:nth-child(2){animation-delay:.05s;}.stat-card:nth-child(3){animation-delay:.1s;}.stat-card:nth-child(4){animation-delay:.15s;}
+.stat-num{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--wine);line-height:1;margin-bottom:4px;}
+.stat-label{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);}
+.section-title{font-family:'Playfair Display',serif;font-size:19px;font-style:italic;color:var(--wine);margin-bottom:12px;}
+.bar-chart{margin-bottom:22px;}
+.bar-row{margin-bottom:10px;}
+.bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-soft);margin-bottom:4px;font-weight:500;}
+.bar-track{background:var(--border-soft);border-radius:8px;height:8px;overflow:hidden;}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--petal),var(--rose-deep));border-radius:8px;transition:width .8s cubic-bezier(.23,1,.32,1);}
+.top-item{display:flex;align-items:center;gap:12px;background:white;border:1px solid var(--border-soft);border-radius:14px;padding:13px 15px;margin-bottom:10px;box-shadow:0 1px 6px var(--shadow);cursor:pointer;touch-action:manipulation;animation:cardIn .4s ease both;}
+.top-item:active{opacity:.85;}
+.top-rank{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--blush-deep);min-width:30px;text-align:center;}
+.top-info{flex:1;min-width:0;}
+.top-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--wine);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top-detail{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.top-stars{color:var(--gold);font-size:13px;}
+.flourish{text-align:center;color:var(--petal);font-size:18px;letter-spacing:8px;margin:20px 0 8px;opacity:.6;}
+.wishlist-header{text-align:center;margin-bottom:18px;font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--text-soft);}
+
+/* FAB */
+.fab{
+  position:fixed;bottom:calc(var(--bar-h) + env(safe-area-inset-bottom) + 16px);right:18px;
+  width:56px;height:56px;background:linear-gradient(135deg,var(--rose-deep),var(--wine));
+  color:white;border:none;border-radius:50%;font-size:26px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(122,45,62,.4);display:flex;align-items:center;justify-content:center;
+  touch-action:manipulation;z-index:20;transition:transform .2s,box-shadow .2s;
+}
+.fab:active{transform:scale(.93);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(61,32,39,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:200;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--cream);border-radius:26px 26px 0 0;width:100%;max-width:680px;padding:6px 20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));max-height:94dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:sheetUp .32s cubic-bezier(.32,.72,0,1);}
+@keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:38px;height:4px;border-radius:2px;background:var(--border);margin:10px auto 18px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.modal-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;font-style:italic;color:var(--wine);}
+.modal-close{width:34px;height:34px;border-radius:50%;background:var(--blush);border:none;cursor:pointer;font-size:18px;color:var(--rose-deep);display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
+.modal-close:active{background:var(--petal);}
+
+/* FORM */
+.form-section{background:white;border-radius:16px;border:1px solid var(--border-soft);padding:16px;margin-bottom:12px;}
+.form-section-label{font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--rose);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.field-group{margin-bottom:12px;}
+.field-group:last-child{margin-bottom:0;}
+.field-label{font-size:11px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;display:block;}
+.field-input{width:100%;background:var(--blush-pale);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--text);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;}
+.field-input:focus{border-color:var(--mauve);background:white;}
+.field-input::placeholder{color:var(--text-muted);}
+textarea.field-input{resize:vertical;min-height:78px;line-height:1.6;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* STARS */
+.star-input{display:flex;gap:4px;}
+.star-btn{font-size:30px;background:none;border:none;cursor:pointer;color:var(--border);transition:color .15s,transform .15s;padding:2px;touch-action:manipulation;}
+.star-btn.lit{color:var(--gold);}
+.star-btn:active{transform:scale(1.25);}
+
+/* TYPE */
+.type-selector{display:flex;gap:7px;flex-wrap:wrap;}
+.type-opt{padding:8px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--blush-pale);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-soft);touch-action:manipulation;}
+.type-opt.selected{background:var(--blush-deep);border-color:var(--rose);color:var(--wine);font-weight:500;}
+.type-opt:active{transform:scale(.95);}
+
+/* COMPANIONS */
+.companion-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.companion-chip{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--blush-pale);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-soft);touch-action:manipulation;}
+.companion-chip.selected{background:var(--blush-deep);border-color:var(--rose);color:var(--wine);}
+.chip-avatar{width:22px;height:22px;border-radius:50%;background:var(--petal);font-size:11px;font-weight:600;color:var(--wine);display:flex;align-items:center;justify-content:center;}
+
+/* TAGS */
+.tag-container{display:flex;flex-wrap:wrap;gap:5px;background:var(--blush-pale);border:1.5px solid var(--border);border-radius:12px;padding:8px 10px;cursor:text;transition:border-color .2s;min-height:46px;align-items:center;}
+.tag-container:focus-within{border-color:var(--mauve);background:white;}
+.tag{display:flex;align-items:center;gap:3px;background:var(--blush-deep);color:var(--wine);border-radius:10px;padding:3px 9px;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;}
+.tag-remove{cursor:pointer;opacity:.6;font-size:13px;touch-action:manipulation;}
+.tag-input{border:none;background:none;outline:none;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--text);min-width:80px;flex:1;}
+.tag-input::placeholder{color:var(--text-muted);}
+
+/* PHOTO */
+.photo-upload{border:2px dashed var(--border);border-radius:14px;padding:22px;text-align:center;cursor:pointer;background:var(--blush-pale);touch-action:manipulation;}
+.photo-upload:active{background:white;}
+.photo-upload-icon{font-size:30px;margin-bottom:6px;}
+.photo-upload-text{font-size:13px;color:var(--text-muted);}
+.photo-preview{position:relative;}
+.photo-preview img{width:100%;border-radius:12px;max-height:200px;object-fit:cover;display:block;}
+.photo-clear{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.9);border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--wine);}
+
+/* WISHLIST TOGGLE */
+.wishlist-toggle{display:flex;align-items:center;justify-content:space-between;padding:12px 0 0;}
+.wishlist-label{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--text-soft);}
+.toggle-switch{width:46px;height:26px;border-radius:13px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background .25s;flex-shrink:0;touch-action:manipulation;}
+.toggle-switch.on{background:var(--rose);}
+.toggle-switch::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:white;top:3px;left:3px;transition:transform .25s cubic-bezier(.34,1.56,.64,1);box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.toggle-switch.on::after{transform:translateX(20px);}
+
+/* SAVE */
+.save-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--rose-deep),var(--wine));color:white;border:none;border-radius:14px;font-family:'Playfair Display',serif;font-size:18px;font-style:italic;font-weight:600;cursor:pointer;margin-top:6px;box-shadow:0 4px 16px rgba(122,45,62,.3);touch-action:manipulation;}
+.save-btn:active{transform:scale(.98);}
+
+/* DETAIL */
+.detail-photo{width:100%;height:210px;object-fit:cover;border-radius:16px;margin-bottom:16px;}
+.detail-name{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--wine);line-height:1.2;margin-bottom:4px;}
+.detail-winery{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--text-soft);margin-bottom:12px;}
+.detail-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.detail-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.detail-info-cell{background:white;border-radius:12px;border:1px solid var(--border-soft);padding:11px 13px;}
+.detail-info-key{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:3px;}
+.detail-info-val{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--text);}
+.detail-notes{background:white;border-radius:14px;padding:14px;border:1px solid var(--border-soft);margin-bottom:12px;font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:var(--text-soft);line-height:1.7;}
+.detail-actions{display:flex;gap:10px;}
+.action-btn{flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:white;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-soft);font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;}
+.action-btn:active{background:var(--blush-pale);}
+.action-btn.danger{color:#c0392b;}
+.action-btn.danger:active{background:#fff0f0;}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="app-header">
+    <div class="header-eyebrow">🌸 Kieran &amp; Kate's</div>
+    <div class="header-title">Sip &amp; <em>Scribble</em></div>
+    <div class="header-sub">a little wine diary</div>
+  </div>
+
+  <div class="swipe-viewport" id="swipe-viewport">
+    <div class="swipe-track" id="swipe-track">
+
+      <!-- VIEW 0: JOURNAL -->
+      <div class="view" id="view-journal">
+        <div class="view-inner">
+          <div class="controls">
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Search wines…" id="search-input" oninput="filterEntries()">
+            </div>
+            <div class="sort-dropdown">
+              <button class="sort-btn" onclick="toggleSort()">↕ Sort</button>
+              <div class="sort-menu" id="sort-menu">
+                <div class="sort-item active" onclick="setSort('date-desc')">Newest first</div>
+                <div class="sort-item" onclick="setSort('date-asc')">Oldest first</div>
+                <div class="sort-item" onclick="setSort('rating-desc')">Highest rated</div>
+                <div class="sort-item" onclick="setSort('rating-asc')">Lowest rated</div>
+                <div class="sort-item" onclick="setSort('price-asc')">Price: low–high</div>
+                <div class="sort-item" onclick="setSort('price-desc')">Price: high–low</div>
+              </div>
+            </div>
+          </div>
+          <div class="filter-pills" id="grape-filters"></div>
+          <div id="entries-list"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 1: WISHLIST -->
+      <div class="view" id="view-wishlist">
+        <div class="view-inner">
+          <div class="wishlist-header">Bottles to seek out &amp; sip 💌</div>
+          <div id="wishlist-list"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: STATS -->
+      <div class="view" id="view-stats">
+        <div class="view-inner">
+          <div id="stats-content"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM TAB BAR with hand-drawn SVG icons -->
+  <div class="bottom-bar">
+
+    <!-- Journal: wine glass -->
+    <button class="tab-btn active" id="tab-0" onclick="goToTab(0)">
+      <div class="tab-icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 5 Q9 11 9 14 C9 18.4 12.1 22 16 22 C19.9 22 23 18.4 23 14 Q23 11 21 5 Z"
+            fill="#f2c4c4" stroke="#a85965" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M11.5 14.5 Q11 11.5 11.5 9 L20.5 9 Q21 11.5 20.5 14.5 C20.5 17.8 18.4 20.5 16 20.5 C13.6 20.5 11.5 17.8 11.5 14.5 Z"
+            fill="#c97b84" opacity="0.45"/>
+          <line x1="16" y1="22" x2="16" y2="27" stroke="#a85965" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="12" y1="27" x2="20" y2="27" stroke="#a85965" stroke-width="2" stroke-linecap="round"/>
+          <!-- tiny sparkle -->
+          <path d="M21 6 L21.4 7.2 L22.6 7.6 L21.4 8 L21 9.2 L20.6 8 L19.4 7.6 L20.6 7.2 Z" fill="#c9a96e" opacity="0.8"/>
+        </svg>
+      </div>
+      <div class="tab-label">Journal</div>
+      <div class="tab-pip"></div>
+    </button>
+
+    <!-- Wishlist: bookmark with heart -->
+    <button class="tab-btn" id="tab-1" onclick="goToTab(1)">
+      <div class="tab-icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Bookmark -->
+          <path d="M9 4 H23 Q24 4 24 5 V28 L16 23 L8 28 V5 Q8 4 9 4 Z"
+            fill="#fdf0f0" stroke="#c97b84" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- Heart -->
+          <path d="M16 19.5 C16 19.5 10.5 15.5 10.5 12 C10.5 10.1 11.9 8.5 13.6 8.5 C14.7 8.5 15.6 9.2 16 10.2 C16.4 9.2 17.3 8.5 18.4 8.5 C20.1 8.5 21.5 10.1 21.5 12 C21.5 15.5 16 19.5 16 19.5 Z"
+            fill="#e8b4b8" stroke="#a85965" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <div class="tab-label">Wishlist</div>
+      <div class="tab-pip"></div>
+    </button>
+
+    <!-- Stats: bar chart with star -->
+    <button class="tab-btn" id="tab-2" onclick="goToTab(2)">
+      <div class="tab-icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Bars -->
+          <rect x="4"  y="20" width="6" height="9" rx="1.8" fill="#f2c4c4" stroke="#c97b84" stroke-width="1.2"/>
+          <rect x="13" y="14" width="6" height="15" rx="1.8" fill="#d4a0a8" stroke="#a85965" stroke-width="1.2"/>
+          <rect x="22" y="8"  width="6" height="21" rx="1.8" fill="#a85965" stroke="#7b2d3e" stroke-width="1.2"/>
+          <!-- Star sparkle top left -->
+          <path d="M5.5 7 L6 8.5 L7.5 9 L6 9.5 L5.5 11 L5 9.5 L3.5 9 L5 8.5 Z" fill="#c9a96e"/>
+        </svg>
+      </div>
+      <div class="tab-label">Stats</div>
+      <div class="tab-pip"></div>
+    </button>
+
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openAddModal()">＋</button>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">New Entry 🍾</div>
+      <button class="modal-close" onclick="closeModal('add-modal')">×</button>
+    </div>
+    <div class="form-section">
+      <div class="form-section-label">📷 Photo</div>
+      <div id="photo-area" class="photo-upload" onclick="document.getElementById('photo-file').click()">
+        <div class="photo-upload-icon">🌸</div>
+        <div class="photo-upload-text">Tap to add a bottle or label photo</div>
+        <input type="file" id="photo-file" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-label">🍷 The Wine</div>
+      <div class="field-group"><label class="field-label">Wine Name / Label</label><input type="text" class="field-input" id="field-name" placeholder="e.g. Whispering Angel"></div>
+      <div class="field-group"><label class="field-label">Winery / Producer</label><input type="text" class="field-input" id="field-winery" placeholder="e.g. Château d'Esclans"></div>
+      <div class="field-row">
+        <div class="field-group"><label class="field-label">Vintage</label><input type="text" class="field-input" id="field-vintage" placeholder="2022"></div>
+        <div class="field-group"><label class="field-label">Price</label><input type="text" class="field-input" id="field-price" placeholder="$28"></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Type</label>
+        <div class="type-selector" id="type-selector">
+          <div class="type-opt" onclick="selectType(this,'Red')">🍷 Red</div>
+          <div class="type-opt" onclick="selectType(this,'White')">🥂 White</div>
+          <div class="type-opt" onclick="selectType(this,'Rosé')">🌸 Rosé</div>
+          <div class="type-opt" onclick="selectType(this,'Sparkling')">✨ Sparkling</div>
+          <div class="type-opt" onclick="selectType(this,'Dessert')">🍯 Dessert</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-label">🌿 Origin</div>
+      <div class="field-row">
+        <div class="field-group"><label class="field-label">Grape Variety</label><input type="text" class="field-input" id="field-grape" placeholder="e.g. Grenache"></div>
+        <div class="field-group"><label class="field-label">Region</label><input type="text" class="field-input" id="field-region" placeholder="e.g. Provence"></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-label">👅 Tasting</div>
+      <div class="field-group">
+        <label class="field-label">Taste Notes <span style="opacity:.5;font-size:10px">(enter to add)</span></label>
+        <div class="tag-container" id="taste-container" onclick="document.getElementById('taste-input').focus()">
+          <input type="text" class="tag-input" id="taste-input" placeholder="raspberry, vanilla, oak…" onkeydown="handleTag(event,'taste')">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Food Pairings <span style="opacity:.5;font-size:10px">(enter to add)</span></label>
+        <div class="tag-container" id="pairing-container" onclick="document.getElementById('pairing-input').focus()">
+          <input type="text" class="tag-input" id="pairing-input" placeholder="pasta, cheese, salmon…" onkeydown="handleTag(event,'pairing')">
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-label">⭐ Rating &amp; Notes</div>
+      <div class="field-group">
+        <label class="field-label">Your Rating</label>
+        <div class="star-input" id="star-input">
+          <button class="star-btn" onclick="setRating(1)">☆</button>
+          <button class="star-btn" onclick="setRating(2)">☆</button>
+          <button class="star-btn" onclick="setRating(3)">☆</button>
+          <button class="star-btn" onclick="setRating(4)">☆</button>
+          <button class="star-btn" onclick="setRating(5)">☆</button>
+        </div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes &amp; Thoughts</label><textarea class="field-input" id="field-notes" placeholder="What did we think? Any memorable moments…"></textarea></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-label">🥂 Drank with</div>
+      <div class="companion-chips" id="companions">
+        <div class="companion-chip" onclick="toggleChip(this)"><div class="chip-avatar">K</div> Kieran</div>
+        <div class="companion-chip" onclick="toggleChip(this)"><div class="chip-avatar">K</div> Kate</div>
+        <div class="companion-chip" onclick="toggleChip(this)"><div class="chip-avatar">🍷</div> Solo</div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="wishlist-toggle">
+        <div>
+          <div class="wishlist-label">💌 Add to Wishlist instead?</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Log wines you want to try!</div>
+        </div>
+        <button class="toggle-switch" id="wishlist-toggle" onclick="toggleWishlist()"></button>
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveEntry()">Save to my journal ✨</button>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+let entries=[],currentRating=0,currentType='',currentTasteTags=[],currentPairingTags=[];
+let currentPhoto=null,isWishlist=false,editingId=null;
+let currentSort='date-desc',activeGrapeFilter='',currentTab=0;
+
+function load(){try{const d=localStorage.getItem('sip-journal-v2');if(d)entries=JSON.parse(d);}catch(e){}}
+function persist(){localStorage.setItem('sip-journal-v2',JSON.stringify(entries));}
+load();
+
+// ── SWIPE NAV ──
+const track=document.getElementById('swipe-track');
+const vp=document.getElementById('swipe-viewport');
+
+function goToTab(i){
+  currentTab=i;
+  track.classList.remove('no-transition');
+  track.style.transform=`translateX(-${i*33.3333}%)`;
+  document.querySelectorAll('.tab-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
+  if(i===0)renderEntries();
+  if(i===1)renderWishlist();
+  if(i===2)renderStats();
+}
+
+let tx0=0,ty0=0,tt0=0,sw=false,sdx=0;
+vp.addEventListener('touchstart',e=>{
+  if(e.target.closest('.modal-overlay'))return;
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
+  tx0=e.touches[0].clientX;ty0=e.touches[0].clientY;tt0=Date.now();sw=false;sdx=0;
+},{passive:true});
+vp.addEventListener('touchmove',e=>{
+  if(e.target.closest('.modal-overlay'))return;
+  const dx=e.touches[0].clientX-tx0,dy=e.touches[0].clientY-ty0;
+  if(!sw&&Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.4)sw=true;
+  if(sw){sdx=dx;track.classList.add('no-transition');track.style.transform=`translateX(calc(-${currentTab*33.3333}% + ${dx*.42}px))`;}
+},{passive:true});
+vp.addEventListener('touchend',()=>{
+  if(!sw)return;sw=false;
+  const dt=Date.now()-tt0,flick=Math.abs(sdx)>40&&dt<280,slide=Math.abs(sdx)>window.innerWidth*.28;
+  if((flick||slide)&&sdx<0&&currentTab<2)goToTab(currentTab+1);
+  else if((flick||slide)&&sdx>0&&currentTab>0)goToTab(currentTab-1);
+  else{track.classList.remove('no-transition');track.style.transform=`translateX(-${currentTab*33.3333}%)`;}
+},{passive:true});
+
+// ── MODAL ──
+function openAddModal(editId){
+  editingId=editId||null;resetForm();
+  if(editId){
+    const e=entries.find(x=>x.id===editId);if(!e)return;
+    document.getElementById('modal-title').textContent='Edit Entry ✏️';
+    document.getElementById('field-name').value=e.name||'';
+    document.getElementById('field-winery').value=e.winery||'';
+    document.getElementById('field-vintage').value=e.vintage||'';
+    document.getElementById('field-price').value=e.price||'';
+    document.getElementById('field-grape').value=e.grape||'';
+    document.getElementById('field-region').value=e.region||'';
+    document.getElementById('field-notes').value=e.notes||'';
+    if(e.type){const opt=document.querySelector(`.type-opt[data-val="${e.type}"]`);if(opt){opt.classList.add('selected');currentType=e.type;}}
+    if(e.rating)setRating(e.rating);
+    if(e.wishlist){isWishlist=true;document.getElementById('wishlist-toggle').classList.add('on');}
+    if(e.photo){currentPhoto=e.photo;showPhotoPreview(e.photo);}
+    document.querySelectorAll('.companion-chip').forEach(chip=>{
+      if(e.companions&&e.companions.some(c=>chip.textContent.trim().includes(c.trim())))chip.classList.add('selected');
+    });
+    currentTasteTags=[...(e.tasteTags||[])];currentPairingTags=[...(e.pairingTags||[])];
+    renderTags('taste');renderTags('pairing');
+  } else {
+    document.getElementById('modal-title').textContent='New Entry 🍾';
+  }
+  document.getElementById('add-modal').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function resetForm(){
+  currentRating=0;currentType='';currentTasteTags=[];currentPairingTags=[];currentPhoto=null;isWishlist=false;
+  ['field-name','field-winery','field-vintage','field-price','field-grape','field-region','field-notes'].forEach(id=>document.getElementById(id).value='');
+  document.querySelectorAll('.star-btn').forEach(b=>{b.classList.remove('lit');b.textContent='☆';});
+  document.querySelectorAll('.type-opt').forEach(o=>o.classList.remove('selected'));
+  document.querySelectorAll('.companion-chip').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('wishlist-toggle').classList.remove('on');
+  document.getElementById('taste-container').innerHTML='<input type="text" class="tag-input" id="taste-input" placeholder="raspberry, vanilla, oak…" onkeydown="handleTag(event,\'taste\')">';
+  document.getElementById('pairing-container').innerHTML='<input type="text" class="tag-input" id="pairing-input" placeholder="pasta, cheese, salmon…" onkeydown="handleTag(event,\'pairing\')">';
+  const pa=document.getElementById('photo-area');
+  pa.className='photo-upload';pa.onclick=()=>document.getElementById('photo-file').click();
+  pa.innerHTML='<div class="photo-upload-icon">🌸</div><div class="photo-upload-text">Tap to add a bottle or label photo</div><input type="file" id="photo-file" accept="image/*" style="display:none" onchange="handlePhoto(event)">';
+}
+document.querySelectorAll('.type-opt').forEach(opt=>{opt.dataset.val=opt.textContent.trim().replace(/^.\s*/,'');});
+function selectType(el,val){document.querySelectorAll('.type-opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');currentType=val;}
+function toggleChip(el){el.classList.toggle('selected');}
+function setRating(n){currentRating=n;document.querySelectorAll('.star-btn').forEach((b,i)=>{b.classList.toggle('lit',i<n);b.textContent=i<n?'★':'☆';});}
+function handleTag(e,type){
+  if(e.key==='Enter'||e.key===','){e.preventDefault();const input=document.getElementById(type+'-input');const val=input.value.trim().replace(/,$/,'');if(!val)return;if(type==='taste')currentTasteTags.push(val);else currentPairingTags.push(val);input.value='';renderTags(type);}
+  if(e.key==='Backspace'&&!e.target.value){if(type==='taste'&&currentTasteTags.length)currentTasteTags.pop();else if(type==='pairing'&&currentPairingTags.length)currentPairingTags.pop();renderTags(type);}
+}
+function removeTag(type,i){if(type==='taste')currentTasteTags.splice(i,1);else currentPairingTags.splice(i,1);renderTags(type);}
+function renderTags(type){
+  const tags=type==='taste'?currentTasteTags:currentPairingTags;
+  const ph=type==='taste'?'raspberry, vanilla, oak…':'pasta, cheese, salmon…';
+  document.getElementById(type+'-container').innerHTML=tags.map((t,i)=>`<span class="tag">${t}<span class="tag-remove" onclick="removeTag('${type}',${i})">×</span></span>`).join('')+`<input type="text" class="tag-input" id="${type}-input" placeholder="${tags.length?'':ph}" onkeydown="handleTag(event,'${type}')">`;
+}
+function handlePhoto(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{currentPhoto=ev.target.result;showPhotoPreview(ev.target.result);};reader.readAsDataURL(file);}
+function showPhotoPreview(src){const pa=document.getElementById('photo-area');pa.className='photo-preview';pa.onclick=null;pa.innerHTML=`<img src="${src}" alt="Wine photo"><button class="photo-clear" onclick="clearPhoto()">×</button>`;}
+function clearPhoto(){currentPhoto=null;const pa=document.getElementById('photo-area');pa.className='photo-upload';pa.onclick=()=>document.getElementById('photo-file').click();pa.innerHTML='<div class="photo-upload-icon">🌸</div><div class="photo-upload-text">Tap to add a bottle or label photo</div><input type="file" id="photo-file" accept="image/*" style="display:none" onchange="handlePhoto(event)">';}
+function toggleWishlist(){isWishlist=!isWishlist;document.getElementById('wishlist-toggle').classList.toggle('on',isWishlist);}
+function saveEntry(){
+  const name=document.getElementById('field-name').value.trim();if(!name){alert('Please add a wine name 🍷');return;}
+  const companions=[...document.querySelectorAll('.companion-chip.selected')].map(c=>c.textContent.trim());
+  const entry={id:editingId||Date.now().toString(),name,winery:document.getElementById('field-winery').value.trim(),vintage:document.getElementById('field-vintage').value.trim(),price:document.getElementById('field-price').value.trim(),type:currentType,grape:document.getElementById('field-grape').value.trim(),region:document.getElementById('field-region').value.trim(),tasteTags:[...currentTasteTags],pairingTags:[...currentPairingTags],rating:currentRating,notes:document.getElementById('field-notes').value.trim(),companions,photo:currentPhoto,wishlist:isWishlist,date:editingId?(entries.find(x=>x.id===editingId)?.date||new Date().toISOString()):new Date().toISOString(),fav:editingId?(entries.find(x=>x.id===editingId)?.fav||false):false};
+  if(editingId){const i=entries.findIndex(x=>x.id===editingId);entries[i]=entry;}else entries.unshift(entry);
+  persist();closeModal('add-modal');if(isWishlist)goToTab(1);else goToTab(0);
+}
+function deleteEntry(id){if(!confirm('Remove this wine entry? 🥺'))return;entries=entries.filter(x=>x.id!==id);persist();closeModal('detail-modal');if(currentTab===1)renderWishlist();else renderEntries();}
+function toggleFav(id,e){e.stopPropagation();const entry=entries.find(x=>x.id===id);if(entry){entry.fav=!entry.fav;persist();renderEntries();}}
+function filterEntries(){renderEntries();}
+function toggleSort(){document.getElementById('sort-menu').classList.toggle('open');}
+document.addEventListener('click',e=>{if(!e.target.closest('.sort-dropdown'))document.getElementById('sort-menu').classList.remove('open');});
+function setSort(s){currentSort=s;document.querySelectorAll('.sort-item').forEach(i=>{i.classList.toggle('active',i.onclick.toString().includes(s));});document.getElementById('sort-menu').classList.remove('open');renderEntries();}
+function getSorted(list){return[...list].sort((a,b)=>{if(currentSort==='date-desc')return new Date(b.date)-new Date(a.date);if(currentSort==='date-asc')return new Date(a.date)-new Date(b.date);if(currentSort==='rating-desc')return(b.rating||0)-(a.rating||0);if(currentSort==='rating-asc')return(a.rating||0)-(b.rating||0);if(currentSort==='price-asc')return pp(a.price)-pp(b.price);if(currentSort==='price-desc')return pp(b.price)-pp(a.price);return 0;});}
+function pp(p){return parseFloat((p||'').replace(/[^0-9.]/g,''))||0;}
+function renderGrapeFilters(list){const grapes=[...new Set(list.map(e=>e.grape).filter(Boolean))];const el=document.getElementById('grape-filters');if(!grapes.length){el.innerHTML='';return;}el.innerHTML=['All',...grapes].map(g=>`<div class="filter-pill ${(g==='All'&&!activeGrapeFilter)||(g===activeGrapeFilter)?'active':''}" onclick="setGrapeFilter('${g}')">${g}</div>`).join('');}
+function setGrapeFilter(g){activeGrapeFilter=g==='All'?'':g;renderEntries();}
+function renderEntries(){
+  const q=(document.getElementById('search-input')?.value||'').toLowerCase();
+  let list=entries.filter(e=>!e.wishlist);
+  if(activeGrapeFilter)list=list.filter(e=>e.grape===activeGrapeFilter);
+  if(q)list=list.filter(e=>[e.name,e.winery,e.grape,e.region,e.type,...(e.tasteTags||[])].some(v=>v?.toLowerCase().includes(q)));
+  renderGrapeFilters(entries.filter(e=>!e.wishlist));list=getSorted(list);
+  const el=document.getElementById('entries-list');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-art">🍷</div><div class="empty-title">No wines yet, darling</div><div class="empty-sub">Tap ＋ to add your first bottle</div></div>';return;}
+  el.innerHTML=list.map((e,i)=>cardHTML(e,i,false)).join('');
+}
+function renderWishlist(){
+  const list=entries.filter(e=>e.wishlist);const el=document.getElementById('wishlist-list');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-art">💌</div><div class="empty-title">Your wishlist is empty</div><div class="empty-sub">Add wines to try via the ＋ button</div></div>';return;}
+  el.innerHTML=list.map((e,i)=>cardHTML(e,i,true)).join('');
+}
+function typeEmoji(t){return{Red:'🍷',White:'🥂','Rosé':'🌸',Sparkling:'✨',Dessert:'🍯'}[t]||'🍾';}
+function cardHTML(e,idx,isWish){
+  const stars=e.rating?'★'.repeat(e.rating)+'☆'.repeat(5-e.rating):'☆☆☆☆☆';
+  const pills=[e.type?`<span class="pill pill-type">${typeEmoji(e.type)} ${e.type}</span>`:'',e.grape?`<span class="pill pill-grape">🍇 ${e.grape}</span>`:'',e.region?`<span class="pill pill-region">📍 ${e.region}</span>`:'',isWish?`<span class="pill pill-wishlist">💌 Wishlist</span>`:''].filter(Boolean).join('');
+  const tasteDots=(e.tasteTags||[]).slice(0,4).map(t=>`<span class="taste-dot">${t}</span>`).join('');
+  const avatars=(e.companions||[]).filter(c=>c!=='Solo').map(c=>`<div class="avatar">${c[0]}</div>`).join('');
+  const dateStr=e.date?new Date(e.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
+  return`<div class="entry-card" onclick="openDetail('${e.id}')" style="animation-delay:${idx*.05}s">
+    ${e.photo?`<img class="card-photo" src="${e.photo}" alt="${e.name}">`:''}
+    <div class="card-body">
+      <div class="card-top">
+        <div class="card-title-group"><div class="card-wine-name">${e.name}${e.vintage?` <span style="font-size:13px;color:var(--text-soft);font-weight:400">'${e.vintage.slice(-2)}</span>`:''}</div>${e.winery?`<div class="card-winery">${e.winery}</div>`:''}</div>
+        <div class="card-right"><div class="card-stars">${stars}</div>${e.price?`<div class="card-price">${e.price}</div>`:''}<button class="fav-btn" onclick="event.stopPropagation();toggleFav('${e.id}',event)">${e.fav?'❤️':'🤍'}</button></div>
+      </div>
+      ${pills?`<div class="card-pills">${pills}</div>`:''}
+      ${tasteDots?`<div class="card-taste">${tasteDots}</div>`:''}
+      ${e.notes?`<div class="card-notes">"${e.notes.length>110?e.notes.slice(0,110)+'…':e.notes}"</div>`:''}
+      <div class="card-meta"><div class="card-with">${avatars?`<div style="display:flex">${avatars}</div>`:''} ${(e.companions||[]).includes('Solo')?'<span>🍷 Solo</span>':''} ${e.companions?.length?`<span style="margin-left:4px">${e.companions.join(', ')}</span>`:''}</div><span>${dateStr}</span></div>
+    </div>
+  </div>`;
+}
+function openDetail(id){
+  const e=entries.find(x=>x.id===id);if(!e)return;
+  const infoGrid=[e.type&&{k:'Type',v:`${typeEmoji(e.type)} ${e.type}`},e.vintage&&{k:'Vintage',v:e.vintage},e.grape&&{k:'Grape',v:e.grape},e.region&&{k:'Region',v:e.region},e.price&&{k:'Price',v:e.price},e.companions?.length&&{k:'Drank with',v:e.companions.join(', ')}].filter(Boolean);
+  const tasteTags=(e.tasteTags||[]).length?`<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Taste Notes</div><div style="display:flex;flex-wrap:wrap;gap:5px">${e.tasteTags.map(t=>`<span class="pill pill-grape">${t}</span>`).join('')}</div></div>`:'';
+  const pairingTags=(e.pairingTags||[]).length?`<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px">Food Pairings</div><div style="display:flex;flex-wrap:wrap;gap:5px">${e.pairingTags.map(t=>`<span class="pill pill-region">${t}</span>`).join('')}</div></div>`:'';
+  document.getElementById('detail-content').innerHTML=`${e.photo?`<img class="detail-photo" src="${e.photo}" alt="${e.name}">`:'<div style="height:6px"></div>'}<div class="detail-name">${e.name}${e.vintage?` <span style="font-size:17px;color:var(--text-soft);font-weight:400">(${e.vintage})</span>`:''}</div>${e.winery?`<div class="detail-winery">${e.winery}</div>`:''}<div class="detail-row"><div style="font-size:22px;color:var(--gold);letter-spacing:2px">${e.rating?'★'.repeat(e.rating)+'☆'.repeat(5-e.rating):'☆☆☆☆☆'}</div><div style="display:flex;gap:8px;align-items:center">${e.wishlist?'<span class="pill pill-wishlist">💌 Wishlist</span>':''}${e.fav?'<span style="font-size:20px">❤️</span>':''}</div></div>${infoGrid.length?`<div class="detail-info-grid">${infoGrid.map(i=>`<div class="detail-info-cell"><div class="detail-info-key">${i.k}</div><div class="detail-info-val">${i.v}</div></div>`).join('')}</div>`:''}${tasteTags}${pairingTags}${e.notes?`<div class="detail-notes">"${e.notes}"</div>`:''}<div class="detail-actions"><button class="action-btn" onclick="closeModal('detail-modal');openAddModal('${e.id}')">✏️ Edit</button><button class="action-btn danger" onclick="deleteEntry('${e.id}')">🗑 Delete</button></div>`;
+  document.getElementById('detail-modal').classList.add('open');
+}
+function renderStats(){
+  const logged=entries.filter(e=>!e.wishlist);const total=logged.length;
+  if(!total){document.getElementById('stats-content').innerHTML='<div class="empty"><div class="empty-art">✨</div><div class="empty-title">No stats yet</div><div class="empty-sub">Add some wines to see your stats!</div></div>';return;}
+  const avgRating=(logged.reduce((s,e)=>s+(e.rating||0),0)/total).toFixed(1);
+  const wishCount=entries.filter(e=>e.wishlist).length;
+  const grapeCount=new Set(logged.map(e=>e.grape).filter(Boolean)).size;
+  const grapeMap={},typeMap={};
+  logged.forEach(e=>{if(e.grape)grapeMap[e.grape]=(grapeMap[e.grape]||0)+1;if(e.type)typeMap[e.type]=(typeMap[e.type]||0)+1;});
+  const topGrapes=Object.entries(grapeMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxG=topGrapes[0]?.[1]||1;
+  const topTypes=Object.entries(typeMap).sort((a,b)=>b[1]-a[1]);
+  const topRated=[...logged].filter(e=>e.rating).sort((a,b)=>b.rating-a.rating).slice(0,3);
+  document.getElementById('stats-content').innerHTML=`<div class="stats-grid"><div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Wines Tried</div></div><div class="stat-card"><div class="stat-num">${avgRating}</div><div class="stat-label">Avg Rating</div></div><div class="stat-card"><div class="stat-num">${grapeCount}</div><div class="stat-label">Grape Varieties</div></div><div class="stat-card"><div class="stat-num">${wishCount}</div><div class="stat-label">On Wishlist</div></div></div>${topGrapes.length?`<div class="section-title">Top Grapes 🍇</div><div class="bar-chart">${topGrapes.map(([g,c])=>`<div class="bar-row"><div class="bar-label"><span>${g}</span><span>${c} wine${c>1?'s':''}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(c/maxG*100)}%"></div></div></div>`).join('')}</div>`:''}${topTypes.length?`<div class="section-title">By Type 🍾</div><div class="bar-chart">${topTypes.map(([t,c])=>`<div class="bar-row"><div class="bar-label"><span>${typeEmoji(t)} ${t}</span><span>${c}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(c/total*100)}%"></div></div></div>`).join('')}</div>`:''}${topRated.length?`<div class="section-title">Favourites ⭐</div>${topRated.map((e,i)=>`<div class="top-item" onclick="openDetail('${e.id}')" style="animation-delay:${i*.06}s"><div class="top-rank">${['①','②','③'][i]}</div><div class="top-info"><div class="top-name">${e.name}</div><div class="top-detail">${[e.winery,e.vintage,e.grape].filter(Boolean).join(' · ')}</div></div><div class="top-stars">${'★'.repeat(e.rating)}</div></div>`).join('')}`:''}
+  <div class="flourish">✦ ✦ ✦</div>`;
+}
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+goToTab(0);
+</script>
+</body>
+</html>
